@@ -1,4 +1,4 @@
-package com.example.boshratracker;
+package com.osarious.boshratracker;
 
 import org.junit.Test;
 

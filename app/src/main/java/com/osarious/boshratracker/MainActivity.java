@@ -1,4 +1,4 @@
-package com.example.boshratracker;
+package com.osarious.boshratracker;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,6 +12,9 @@ import io.nlopez.smartlocation.SmartLocation;
 
 import android.app.ProgressDialog;
 import android.graphics.drawable.ColorDrawable;
+import android.provider.Telephony;
+import android.telecom.TelecomManager;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -71,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         List<String> listPermissionsNeeded = new ArrayList<>();
 
+
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
         }
@@ -80,6 +84,10 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
         }
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(Manifest.permission.ACCESS_NETWORK_STATE);
+        }
+
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             listPermissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         }
@@ -98,13 +106,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
         SharedPreferences pref = this.getSharedPreferences("MyPref", MODE_PRIVATE);
 
 
         SpannableString secretword=new SpannableString(pref.getString("secretmessage", ""));
 
-        secretword.setSpan(new android.text.style.StyleSpan(Typeface.BOLD_ITALIC), 0, secretword.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        secretword.setSpan(new StyleSpan(Typeface.BOLD_ITALIC), 0, secretword.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         currentMessage = findViewById(R.id.currentmessage);
 
         currentMessage.setText(!pref.contains("secretmessage")?"":secretword);
@@ -171,7 +178,7 @@ if(!newMessage.getText().toString().isEmpty()) {
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
 
-                checkAndSendSMS();
+                SmsReceiver.checkAndSendSMS(MainActivity.this);
             }
 
         });
@@ -204,7 +211,9 @@ if(!newMessage.getText().toString().isEmpty()) {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode==REQUEST_CHECK_SETTINGS){
+        if(requestCode==REQUEST_CHECK_SETTINGS) {
+
+
 
            if(resultCode==RESULT_CANCELED){
 
@@ -224,7 +233,7 @@ if(!newMessage.getText().toString().isEmpty()) {
 
                    Toast.makeText(this, "Gps opened", Toast.LENGTH_SHORT).show();
                    //if user allows to open gps
-               checkAndSendSMS();
+               SmsReceiver.checkAndSendSMS(this);
 
                }
             }
@@ -257,46 +266,8 @@ getRecivedOrtrackedPhoneNumber(true,false);
 
     }
 
-    void checkAndSendSMS(){
-        if(!SmsReceiver.recivedMessage.trim().isEmpty()) {
-            SharedPreferences pref = this.getSharedPreferences("MyPref", MODE_PRIVATE);
-            String saved = pref.getString("secretmessage", "");
 
 
-            final ProgressDialog dialogProgress = new ProgressDialog(MainActivity.this);
-            dialogProgress.setMessage("Decrypting message...");
-            dialogProgress.setCancelable(false);
-            dialogProgress.show();
-
-
-            if (BCrypt.checkpw(saved, SmsReceiver.recivedMessage.trim())) {
-                SmartLocation.with(this).location()
-                        .oneFix().start(new OnLocationUpdatedListener() {
-                            @Override
-                            public void onLocationUpdated(Location location) {
-
-                                dialogProgress.dismiss();
-
-                                SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0);
-                                String recivedPhone = pref.getString("recivedPhone", "");// number to get the sms
-                               int countryPhoneCode= pref.getInt("recivedPhoneCode", 91);
-                               String countryPhoneCodeWithPlus= pref.getString("recivedPhoneCodeWithPlus", "");
-
-                                String geoUri = "https://www.google.com/maps/search/?api=1&query=" + location.getLatitude() + "," + location.getLongitude();
-
-
-                                SmsManager smsManager = SmsManager.getDefault();
-                                smsManager.sendTextMessage(String.valueOf(countryPhoneCodeWithPlus+recivedPhone), null, geoUri, null, null);
-
-                                SmartLocation.with(MainActivity.this).location().stop();
-                                SmartLocation.with(MainActivity.this).geocoding().stop();
-
-                            }
-                        });
-
-            }
-        }
-    }
 
     void getRecivedOrtrackedPhoneNumber(boolean isRecived, final boolean IsUserSendingmessage){
 
