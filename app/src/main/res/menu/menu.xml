@@ -6,7 +6,7 @@
 
     <item
         android:title="Change recived phone Number"
-        app:showAsAction="always"
+        app:showAsAction="ifRoom"
         android:id="@+id/recived_Phone"
         android:icon="@drawable/recived_phone"
         />

@@ -1,5 +1,6 @@
 package com.osarious.boshratracker;
 
+import android.app.ActionBar;
 import android.app.ActivityManager;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -10,6 +11,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -34,6 +36,7 @@ public  class SmsReceiver extends BroadcastReceiver {
     private static final String BOOT_COMPLETED = "android.intent.action.BOOT_COMPLETED";
     private static final String RECEIVE_BOOT_COMPLETED = "android.intent.action.RECEIVE_BOOT_COMPLETED";
      static String recivedMessage = "";
+     static Boolean enteredbesteffort = false;
 
     @Override
     public void onReceive(final Context context, Intent intent) {
@@ -70,40 +73,70 @@ public  class SmsReceiver extends BroadcastReceiver {
     }
     //todo remove later
 
-        static void checkAndSendSMS(final Context context) {
+       static void checkAndSendSMS(final Context context) {
 
             SharedPreferences pref = context.getSharedPreferences("MyPref", MODE_PRIVATE);
             String saved = pref.getString("secretmessage", "");
 
 
-            if (!saved.trim().isEmpty()&&!recivedMessage.trim().isEmpty()) {
+           if (!saved.trim().isEmpty()&&!recivedMessage.trim().isEmpty()) {
 
                 try {
                     if (BCrypt.checkpw(saved, recivedMessage.trim())) {
+                    final    Handler handler = new Handler();
 
-                        SmartLocation.with(context).location().
-                                oneFix().start(new OnLocationUpdatedListener() {
-                            @Override
-                            public void onLocationUpdated(Location location) {
-
-
-                                SharedPreferences pref = context.getSharedPreferences("MyPref", 0);
-                                String recivedPhone = pref.getString("recivedPhone", "");// number to get the sms
-                                int countryPhoneCode = pref.getInt("recivedPhoneCode", 91);
-                                String countryPhoneCodeWithPlus = pref.getString("recivedPhoneCodeWithPlus", "");
-
-                                String geoUri = "https://www.google.com/maps/search/?api=1&query=" + location.getLatitude() + "," + location.getLongitude();
-
-
-                                SmsManager smsManager = SmsManager.getDefault();
-                                smsManager.sendTextMessage(String.valueOf(countryPhoneCodeWithPlus + recivedPhone), null, geoUri, null, null);
+                        Runnable r2 = new Runnable() {
+                            public void run() {
 
                                 SmartLocation.with(context).location().stop();
                                 SmartLocation.with(context).geocoding().stop();
 
-                            }
-                        });
+                            SmartLocation.with(context).location().oneFix().
+                                   start(new OnLocationUpdatedListener() {
+                                @Override
+                                public void onLocationUpdated(Location location) {
+                                    if (enteredbesteffort==false) {
 
+                                        enteredbesteffort = true;
+
+                                        handler.removeCallbacksAndMessages(null);
+
+
+                                        SharedPreferences pref = context.getSharedPreferences("MyPref", 0);
+                                        String recivedPhone = pref.getString("recivedPhone", "");// number to get the sms
+                                        int countryPhoneCode = pref.getInt("recivedPhoneCode", 91);
+                                        String countryPhoneCodeWithPlus = pref.getString("recivedPhoneCodeWithPlus", "");
+
+                                        String geoUri = "https://www.google.com/maps/search/?api=1&query=" + location.getLatitude() + "," + location.getLongitude();
+
+
+                                        SmsManager smsManager = SmsManager.getDefault();
+
+                                        smsManager.sendTextMessage(String.valueOf(countryPhoneCodeWithPlus + recivedPhone), null, geoUri, null, null);
+
+                                        SmartLocation.with(context).location().stop();
+                                        SmartLocation.with(context).geocoding().stop();
+
+                                        enteredbesteffort = null;
+
+
+                                    }
+                                }
+                            });
+
+
+
+                                if (enteredbesteffort!=null&&enteredbesteffort==false)
+                            handler.postDelayed(this, 15000);
+
+                                if (enteredbesteffort==null)
+                                    enteredbesteffort = false;
+
+
+                                }
+
+                            };
+                        handler.postDelayed(r2, 0);
 
                     }
                 }catch(IllegalArgumentException e){

@@ -2,6 +2,7 @@ package com.osarious.boshratracker;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -11,7 +12,10 @@ import io.nlopez.smartlocation.OnLocationUpdatedListener;
 import io.nlopez.smartlocation.SmartLocation;
 
 import android.app.ProgressDialog;
+import android.app.role.RoleManager;
 import android.graphics.drawable.ColorDrawable;
+import android.location.LocationManager;
+import android.os.Build;
 import android.provider.Telephony;
 import android.telecom.TelecomManager;
 import android.text.style.StyleSpan;
@@ -68,43 +72,26 @@ public class MainActivity extends AppCompatActivity {
 
     AlertDialog.Builder builder;
     TextView currentMessage ;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        List<String> listPermissionsNeeded = new ArrayList<>();
 
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
-        }
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.SEND_SMS);
-        }
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
-        }
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.ACCESS_NETWORK_STATE);
-        }
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_BOOT_COMPLETED) != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.RECEIVE_BOOT_COMPLETED);
-        }
+        if (! Telephony.Sms.getDefaultSmsPackage(this).equals(this.getPackageName()) ) {
 
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), 1);
+            Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
 
-            getRecivedOrtrackedPhoneNumber(true,false);
+            intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME,
+                    getPackageName());
+
+            startActivityForResult(intent, 1);
 
         }
-
 
         SharedPreferences pref = this.getSharedPreferences("MyPref", MODE_PRIVATE);
 
@@ -159,7 +146,7 @@ if(!newMessage.getText().toString().isEmpty()) {
         });
 
 //start checking of location is open or not
-        createLocationRequest();
+
     }
     void createLocationRequest() {
         LocationRequest locationRequest = LocationRequest.create();
@@ -178,7 +165,6 @@ if(!newMessage.getText().toString().isEmpty()) {
             @Override
             public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
 
-                SmsReceiver.checkAndSendSMS(MainActivity.this);
             }
 
         });
@@ -196,7 +182,7 @@ if(!newMessage.getText().toString().isEmpty()) {
                         // and check the result in onActivityResult().
                         ResolvableApiException resolvable = (ResolvableApiException) e;
                         resolvable.startResolutionForResult(MainActivity.this,
-                                1);
+                                2);
                     } catch (IntentSender.SendIntentException sendEx) {
                         // Ignore the error.
                     }
@@ -211,32 +197,56 @@ if(!newMessage.getText().toString().isEmpty()) {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode==REQUEST_CHECK_SETTINGS) {
-
-
 
            if(resultCode==RESULT_CANCELED){
 
-                Toast.makeText(this, "Please open GPS YASMIN", Toast.LENGTH_LONG).show();
+               if (! Telephony.Sms.getDefaultSmsPackage(this).equals(this.getPackageName()) ) {
 
-               SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0);
-               String number = pref.getString("recivedPhone", "");// number to get the sms
+                   Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
 
+                   intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME,
+                           getPackageName());
 
-                SmsManager smsManager = SmsManager.getDefault();
-                smsManager.sendTextMessage(number, null, "يا حج ياسمين مش فاتحة ال GPS", null, null);
+                   startActivityForResult(intent, 1);
+
+               }
 
                 // in case user back press or refuses to open gps
             }else{
 
+               List<String> listPermissionsNeeded = new ArrayList<>();
 
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.SEND_SMS);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.ACCESS_NETWORK_STATE);
+               }
 
-                   Toast.makeText(this, "Gps opened", Toast.LENGTH_SHORT).show();
-                   //if user allows to open gps
-               SmsReceiver.checkAndSendSMS(this);
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_BOOT_COMPLETED) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.RECEIVE_BOOT_COMPLETED);
+               }
+
+               if (!listPermissionsNeeded.isEmpty()) {
+                   ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), 1);
+
 
                }
-            }
+
+               }
+
         }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -345,7 +355,7 @@ ccp.setCountryForPhoneCode(pref.getInt("recivedPhoneCode", 91));
                             editor.putString("recivedPhoneCodeWithPlus", countryPhoneCodeWithPlus);
                             editor.apply();
                             dialog.dismiss();
-
+                            createLocationRequest();
 
 
                         }
@@ -433,7 +443,5 @@ ccp.setCountryForPhoneCode(pref.getInt("recivedPhoneCode", 91));
         builder.show();
     }
 
-    public void test(View view) {
 
-    }
 }
