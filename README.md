@@ -1,6 +1,8 @@
 # Boshra tracker
 
-Boshra is an arabic word for great news ,and its always great news when you find out where you lost your phone or where is your lost sibling .This app doesn't require internet just an open GPS and some phone credit /
+Boshra is an arabic word for great news ,and its always great news when you find out where you lost your phone or where is your lost sibling .This app doesn't require internet just an open GPS and some phone credit .
+
+It also requirs that it becomes the defaut SMS handler without affecting the messaging app from reciving and sending messages on lt ,Boshra tracker's messages are encrypted to prevent the secret message from falling in wroung hands ,its messages aren't visiable by the messaging app as well making secutrity a priority,if the phone falls in the wroung hands.
 
 
 [![#][1]][1]
