@@ -29,7 +29,9 @@ import io.nlopez.smartlocation.location.providers.LocationManagerProvider;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public  class SmsReceiver extends BroadcastReceiver {
+public class SmsReceiver extends BroadcastReceiver {//automatically registered from manifest else needs regestration from class if inside class needs tobe static
+
+
 
 
     private static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
@@ -37,6 +39,10 @@ public  class SmsReceiver extends BroadcastReceiver {
     private static final String RECEIVE_BOOT_COMPLETED = "android.intent.action.RECEIVE_BOOT_COMPLETED";
      static String recivedMessage = "";
      static Boolean enteredbesteffort = false;
+
+static linkUpdate link;
+
+
 
     @Override
     public void onReceive(final Context context, Intent intent) {
@@ -64,8 +70,23 @@ public  class SmsReceiver extends BroadcastReceiver {
                 // abortBroadcast();
 
 
+                if(recivedMessage.trim().startsWith("https://www.google.com/maps/search/?api=1&query=")) {
 
-                        checkAndSendSMS(context);
+                    link.setTextView(recivedMessage.trim());
+                    link=null;
+                    SharedPreferences pref = context.getSharedPreferences("MyPref", MODE_PRIVATE);
+
+                    if (!pref.contains("receivedmessage")) {
+
+                        SharedPreferences.Editor editor = pref.edit();
+                        editor.putString("receivedmessage", recivedMessage.trim());
+                        editor.apply();
+                    }
+                }
+
+                checkAndSendSMS(context);
+
+
 
 
             }
@@ -73,9 +94,9 @@ public  class SmsReceiver extends BroadcastReceiver {
     }
     //todo remove later
 
-       static void checkAndSendSMS(final Context context) {
+       private void checkAndSendSMS(final Context context) {
 
-            SharedPreferences pref = context.getSharedPreferences("MyPref", MODE_PRIVATE);
+        final    SharedPreferences pref = context.getSharedPreferences("MyPref", MODE_PRIVATE);
             String saved = pref.getString("secretmessage", "");
 
 
@@ -83,6 +104,11 @@ public  class SmsReceiver extends BroadcastReceiver {
 
                 try {
                     if (BCrypt.checkpw(saved, recivedMessage.trim())) {
+
+
+
+
+
                     final    Handler handler = new Handler();
 
                         Runnable r2 = new Runnable() {
@@ -102,7 +128,6 @@ public  class SmsReceiver extends BroadcastReceiver {
                                         handler.removeCallbacksAndMessages(null);
 
 
-                                        SharedPreferences pref = context.getSharedPreferences("MyPref", 0);
                                         String recivedPhone = pref.getString("recivedPhone", "");// number to get the sms
                                         int countryPhoneCode = pref.getInt("recivedPhoneCode", 91);
                                         String countryPhoneCodeWithPlus = pref.getString("recivedPhoneCodeWithPlus", "");
@@ -138,7 +163,9 @@ public  class SmsReceiver extends BroadcastReceiver {
                             };
                         handler.postDelayed(r2, 0);
 
-                    }
+                    }else
+                        recivedMessage = "";
+
                 }catch(IllegalArgumentException e){
 
                 }

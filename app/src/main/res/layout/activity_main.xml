@@ -30,11 +30,28 @@
         android:id="@+id/title"
 
         android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@id/currentmessage"
+        app:layout_constraintBottom_toTopOf="@id/receivedlocation"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/yaso" />
 
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:id="@+id/receivedlocation"
+        android:textIsSelectable="true"
+        android:autoLink="web"
+        android:text=""
+        android:gravity="center"
+
+        app:layout_constraintVertical_weight="2"
+
+
+        app:layout_constraintBottom_toTopOf="@id/currentmessage"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title"
+        />
     <TextView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -47,7 +64,7 @@
         app:layout_constraintBottom_toTopOf="@id/newmessage"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/receivedlocation"
         />
 
     <EditText

@@ -13,6 +13,8 @@ import io.nlopez.smartlocation.SmartLocation;
 
 import android.app.ProgressDialog;
 import android.app.role.RoleManager;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.location.LocationManager;
 import android.os.Build;
@@ -66,13 +68,12 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.nlopez.smartlocation.location.providers.LocationGooglePlayServicesProvider.REQUEST_CHECK_SETTINGS;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements linkUpdate {
 
     AlertDialog.Builder builder;
     TextView currentMessage ;
-
+    TextView receivedlocation;
 
 
     @Override
@@ -93,9 +94,30 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        SmsReceiver.link=this;
+
+        receivedlocation = findViewById(R.id.receivedlocation);
+
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Bundle b =intent.getExtras();
+                String s =b.getString("fromservice");
+                Toast.makeText(context,s, Toast.LENGTH_SHORT).show();
+            }
+        };
+        registerReceiver(receiver,new IntentFilter("action"));
+
+
+
         SharedPreferences pref = this.getSharedPreferences("MyPref", MODE_PRIVATE);
 
+        if(pref.contains("receivedmessage")){
 
+            receivedlocation.setText(pref.getString("receivedmessage",""));
+
+        }
         SpannableString secretword=new SpannableString(pref.getString("secretmessage", ""));
 
         secretword.setSpan(new StyleSpan(Typeface.BOLD_ITALIC), 0, secretword.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -216,12 +238,7 @@ if(!newMessage.getText().toString().isEmpty()) {
 
                List<String> listPermissionsNeeded = new ArrayList<>();
 
-               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-                   listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
-               }
-               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                   listPermissionsNeeded.add(Manifest.permission.SEND_SMS);
-               }
+
                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                    listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
                }
@@ -444,4 +461,14 @@ ccp.setCountryForPhoneCode(pref.getInt("recivedPhoneCode", 91));
     }
 
 
+
+    @Override
+    public void setTextView(String value) {
+
+
+        receivedlocation.setText(value);
+
+
+
+    }
 }
