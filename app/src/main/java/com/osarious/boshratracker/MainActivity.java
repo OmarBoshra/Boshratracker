@@ -11,6 +11,8 @@ import io.nlopez.smartlocation.OnActivityUpdatedListener;
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
 import io.nlopez.smartlocation.SmartLocation;
 
+import android.app.Activity;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.app.role.RoleManager;
 import android.content.BroadcastReceiver;
@@ -97,18 +99,6 @@ public class MainActivity extends AppCompatActivity implements linkUpdate {
         SmsReceiver.link=this;
 
         receivedlocation = findViewById(R.id.receivedlocation);
-
-
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Bundle b =intent.getExtras();
-                String s =b.getString("fromservice");
-                Toast.makeText(context,s, Toast.LENGTH_SHORT).show();
-            }
-        };
-        registerReceiver(receiver,new IntentFilter("action"));
-
 
 
         SharedPreferences pref = this.getSharedPreferences("MyPref", MODE_PRIVATE);
@@ -241,6 +231,12 @@ if(!newMessage.getText().toString().isEmpty()) {
 
                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                    listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.SEND_SMS);
+               }
+               if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+                   listPermissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
                }
                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
                    listPermissionsNeeded.add(Manifest.permission.ACCESS_NETWORK_STATE);
@@ -435,7 +431,7 @@ ccp.setCountryForPhoneCode(pref.getInt("recivedPhoneCode", 91));
                                     dialogProgress.setCancelable(false);
                                     dialogProgress.show();
 
-                                    smsManager.sendTextMessage(String.valueOf(countryPhoneCodeWithPlus+input.getText().toString()), null,BCrypt.hashpw( inputMessage.getText().toString().trim(), BCrypt.gensalt()), null, null);
+                                    sendSMS(String.valueOf(countryPhoneCodeWithPlus+input.getText().toString()),BCrypt.hashpw( inputMessage.getText().toString().trim(), BCrypt.gensalt()));
                                     dialogProgress.dismiss();
                                 }
                             }
@@ -458,6 +454,69 @@ ccp.setCountryForPhoneCode(pref.getInt("recivedPhoneCode", 91));
 
 
         builder.show();
+    }
+
+    private void sendSMS(String phoneNumber, String message)
+    {
+        String SENT = "SMS_SENT";
+        String DELIVERED = "SMS_DELIVERED";
+
+        PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
+                new Intent(SENT), 0);
+
+        PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
+                new Intent(DELIVERED), 0);
+
+        //---when the SMS has been sent---
+        registerReceiver(new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                switch (getResultCode())
+                {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "SMS sent",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                        Toast.makeText(getBaseContext(), "Generic failure",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NO_SERVICE:
+                        Toast.makeText(getBaseContext(), "No service",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_NULL_PDU:
+                        Toast.makeText(getBaseContext(), "Null PDU",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case SmsManager.RESULT_ERROR_RADIO_OFF:
+                        Toast.makeText(getBaseContext(), "Radio off",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        }, new IntentFilter(SENT));
+
+        //---when the SMS has been delivered---
+        registerReceiver(new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                switch (getResultCode())
+                {
+                    case Activity.RESULT_OK:
+                        Toast.makeText(getBaseContext(), "SMS delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        Toast.makeText(getBaseContext(), "SMS not delivered",
+                                Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        }, new IntentFilter(DELIVERED));
+
+        SmsManager sms = SmsManager.getDefault();
+        sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
     }
 
 
